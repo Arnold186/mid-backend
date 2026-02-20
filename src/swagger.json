@@ -1,0 +1,219 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mid Backend API",
+    "version": "1.0.0",
+    "description": "API with registration, favorites, pagination and caching"
+  },
+  "servers": [{ "url": "http://localhost:1085", "description": "Local" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "tags": ["Health"],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" } } } } } }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "John Doe" },
+                  "email": { "type": "string", "format": "email", "example": "john@example.com" },
+                  "password": { "type": "string", "minLength": 8, "example": "SecureP@ss123" },
+                  "phoneNumber": { "type": "string", "nullable": true, "example": "+250788123456" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterResponse" } } } },
+          "400": { "description": "Validation failed" },
+          "409": { "description": "Email already registered" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } } },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/api/items": {
+      "get": {
+        "summary": "List items (paginated)",
+        "tags": ["Items"],
+        "parameters": [
+          { "name": "cursor", "in": "query", "schema": { "type": "string" }, "description": "Cursor for next page" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 }, "description": "Items per page (1-100)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Item" } },
+                    "nextCursor": { "type": "string", "nullable": true },
+                    "hasMore": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/favorites": {
+      "get": {
+        "summary": "Get user favorites",
+        "tags": ["Items"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of favorites", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Favorite" } } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/items/{id}/favorite": {
+      "post": {
+        "summary": "Add item to favorites",
+        "tags": ["Items"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "201": { "description": "Favorite added", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Favorite" } } } },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Item not found" },
+          "409": { "description": "Already in favorites" }
+        }
+      },
+      "delete": {
+        "summary": "Remove item from favorites",
+        "tags": ["Items"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Removed from favorites" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Favorite not found" }
+        }
+      }
+    },
+    "/api/reports/user-activity": {
+      "get": {
+        "summary": "User activity report",
+        "tags": ["Reports"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 }, "description": "Max activity entries" }
+        ],
+        "responses": {
+          "200": {
+            "description": "User activity report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": { "type": "string" },
+                    "favoritesCount": { "type": "integer" },
+                    "recentActivity": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter JWT token from login/register"
+      }
+    },
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Favorite": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "itemId": { "type": "string" },
+          "item": { "$ref": "#/components/schemas/Item" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "phoneNumber": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" },
+          "token": { "type": "string" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" },
+          "token": { "type": "string" }
+        }
+      }
+    }
+  }
+}
