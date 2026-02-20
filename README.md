@@ -30,7 +30,7 @@ TypeScript backend with user registration, favorites, pagination, and caching.
 
 Interactive API documentation is available at:
 
-**http://localhost:3000/api-docs**
+**http://localhost:1085/api-docs**
 
 Use the "Authorize" button with your JWT token (Bearer &lt;token&gt;) to test protected endpoints.
 
