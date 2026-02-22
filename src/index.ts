@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { PrismaClient } from '@prisma/client';
+import cors from 'cors';
 import authRoutes from './routes/auth.routes';
 import itemRoutes from './routes/item.routes';
 import reportRoutes from './routes/report.routes';
@@ -29,6 +30,7 @@ async function checkDatabaseConnection() {
 }
 
 app.use(express.json());
+app.use(cors());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -37,6 +39,14 @@ app.use('/api/items', itemRoutes);
 app.use('/api/reports', reportRoutes);
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    message: 'Welcome to the Mid Backend API',
+    docs: '/api-docs',
+    health: '/health'
+  });
+});
 
 // 404 handler
 app.use((_req, res) => {
