@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 export interface JwtPayload {
   userId: string;
   email: string;
+  role: string;
 }
 
 export interface AuthRequest extends Request {
@@ -29,4 +30,20 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   } catch {
     next(new AppError(401, 'Invalid or expired token'));
   }
+}
+
+export function requireRole(roles: string[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      next(new AppError(401, 'Authorization required'));
+      return;
+    }
+
+    if (!roles.includes(req.user.role)) {
+      next(new AppError(403, 'Forbidden: Insufficient role'));
+      return;
+    }
+
+    next();
+  };
 }

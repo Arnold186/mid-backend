@@ -7,7 +7,7 @@ export async function logActivity(
   action: string,
   metadata?: Record<string, unknown>
 ) {
-  return prisma.activityLog.create({
+  return prisma.auditLog.create({
     data: {
       userId,
       action,

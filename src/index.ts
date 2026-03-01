@@ -1,20 +1,43 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { PrismaClient } from '@prisma/client';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes';
 import itemRoutes from './routes/item.routes';
 import reportRoutes from './routes/report.routes';
+import courseRoutes from './routes/course.routes';
+import enrollmentRoutes from './routes/enrollment.routes';
+import { createQuizAndCourseRouter } from './routes/quiz.routes';
 import { globalErrorHandler } from './middleware/errorHandler';
 import path from 'path';
 import { readFileSync } from 'fs';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 const swaggerDocument = JSON.parse(
   readFileSync(path.join(process.cwd(), 'src', 'swagger.json'), 'utf-8')
 );
 
 const app = express();
+const httpServer = createServer(app);
+export const io = new Server(httpServer, {
+  cors: { origin: '*' }
+});
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('joinRoom', (room) => {
+    socket.join(room);
+    console.log(`Socket ${socket.id} joined room ${room}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 1085;
 const prisma = new PrismaClient();
 
@@ -37,6 +60,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/courses', courseRoutes);
+createQuizAndCourseRouter(app.use('/api/courses', Router()));
+app.use('/api', enrollmentRoutes);
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
@@ -67,7 +93,7 @@ process.on('uncaughtException', (err: Error) => {
 
 // Start server after database connection is verified
 checkDatabaseConnection().then(() => {
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
 });

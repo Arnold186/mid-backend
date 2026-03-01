@@ -27,6 +27,7 @@ export const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   email: emailSchema,
   password: passwordSchema,
+  role: z.enum(['ADMIN', 'TEACHER', 'STUDENT']).optional().default('STUDENT'),
   phoneNumber: z
     .string()
     .regex(
