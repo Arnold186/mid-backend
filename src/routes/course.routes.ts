@@ -35,21 +35,43 @@ router.put('/:id/approve', authMiddleware, requireRole(['ADMIN']), async (req, r
     }
 });
 
-// List courses (Public/Student)
+// List approved courses (Public/Student)
 router.get('/', async (req, res, next) => {
     try {
-        const status = req.query.status as string;
-        const courses = await courseService.listCourses(status);
+        const courses = await courseService.listApprovedCourses();
         res.status(200).json(courses);
     } catch (err) {
         next(err);
     }
 });
 
-// Get single course (Public/Student)
+// List teacher's courses (TEACHER only)
+router.get('/mine', authMiddleware, requireRole(['TEACHER']), async (req, res, next) => {
+    try {
+        const courses = await courseService.listTeacherCourses(req.user!.userId);
+        res.status(200).json(courses);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// List pending courses (ADMIN only)
+router.get('/pending', authMiddleware, requireRole(['ADMIN']), async (req, res, next) => {
+    try {
+        const courses = await courseService.listCourses('PENDING');
+        res.status(200).json(courses);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Get single course (Public for approved, restricted otherwise)
 router.get('/:id', async (req, res, next) => {
     try {
         const course = await courseService.getCourse(req.params.id);
+        if (course.status !== 'APPROVED') {
+            return res.status(403).json({ error: 'Course is not published' });
+        }
         res.status(200).json(course);
     } catch (err) {
         next(err);

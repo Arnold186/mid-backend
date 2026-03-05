@@ -27,6 +27,7 @@ model User {
   auditLogs    AuditLog[]
   courses      Course[]      @relation("TeacherCourses")
   enrollments  Enrollment[]
+  quizAttempts QuizAttempt[]
 }
 
 model Item {
@@ -83,11 +84,13 @@ model Quiz {
   id        String   @id @default(cuid())
   courseId  String
   title     String
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   questions Question[]
+  attempts  QuizAttempt[]
 }
 
 model Question {
@@ -100,6 +103,23 @@ model Question {
   updatedAt DateTime @updatedAt
 
   quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  quizId    String
+  studentId String
+  score     Int
+  total     Int
+  answers   String   // JSON string: { [questionId]: selectedOption }
+  createdAt DateTime @default(now())
+
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@index([studentId])
+  @@index([createdAt])
 }
 
 model Enrollment {

@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function getUserActivityReport(userId: string, limit = 50) {
-  const logs = await prisma.activityLog.findMany({
+  const logs = await prisma.auditLog.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit,

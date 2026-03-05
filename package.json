@@ -9,6 +9,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "db:test": "node scripts/test-connection.js",
     "db:setup": "node scripts/setup-db.js",
+    "db:reset": "node scripts/reset-db.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

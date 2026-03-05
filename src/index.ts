@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import express, { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { PrismaClient } from '@prisma/client';
@@ -28,10 +29,21 @@ export const io = new Server(httpServer, {
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  socket.on('joinRoom', (room) => {
+  socket.on('joinRoom', (room: string) => {
     socket.join(room);
     console.log(`Socket ${socket.id} joined room ${room}`);
   });
+
+  socket.on(
+    'chat:message',
+    (payload: { room: string; message: string; senderName: string; senderId: string }) => {
+      const enriched = {
+        ...payload,
+        timestamp: new Date().toISOString()
+      };
+      io.to(payload.room).emit('chat:message', enriched);
+    }
+  );
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
@@ -61,7 +73,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/courses', courseRoutes);
-createQuizAndCourseRouter(app.use('/api/courses', Router()));
+
+const coursesRouter = Router();
+createQuizAndCourseRouter(coursesRouter);
+app.use('/api/courses', coursesRouter);
+
 app.use('/api', enrollmentRoutes);
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));

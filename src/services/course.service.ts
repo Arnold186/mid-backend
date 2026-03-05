@@ -55,6 +55,21 @@ export async function listCourses(status?: string) {
     });
 }
 
+export async function listApprovedCourses() {
+    return listCourses('APPROVED');
+}
+
+export async function listTeacherCourses(teacherId: string) {
+    return await prisma.course.findMany({
+        where: { teacherId },
+        include: {
+            teacher: { select: { id: true, name: true } },
+            _count: { select: { enrollments: true, quizzes: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
 export async function getCourse(courseId: string) {
     const course = await prisma.course.findUnique({
         where: { id: courseId },
