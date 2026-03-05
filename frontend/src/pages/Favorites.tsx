@@ -23,7 +23,7 @@ export default function Favorites() {
     useEffect(() => {
         const fetchFavorites = async () => {
             try {
-                const res = await fetch('http://localhost:1085/api/items/favorites', {
+                const res = await fetch('http://localhost:1099/api/items/favorites', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -44,7 +44,7 @@ export default function Favorites() {
         setFavorites(prev => prev.filter(f => f.itemId !== itemId));
 
         try {
-            const url = `http://localhost:1085/api/items/${itemId}/favorite`;
+            const url = `http://localhost:1099/api/items/${itemId}/favorite`;
             const res = await fetch(url, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }

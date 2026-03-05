@@ -15,12 +15,14 @@ import path from 'path';
 import { readFileSync } from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import chatRoutes from './routes/chat.routes';
 
 const swaggerDocument = JSON.parse(
   readFileSync(path.join(process.cwd(), 'src', 'swagger.json'), 'utf-8')
 );
 
 const app = express();
+const prisma = new PrismaClient();
 const httpServer = createServer(app);
 export const io = new Server(httpServer, {
   cors: { origin: '*' }
@@ -36,12 +38,38 @@ io.on('connection', (socket) => {
 
   socket.on(
     'chat:message',
-    (payload: { room: string; message: string; senderName: string; senderId: string }) => {
-      const enriched = {
-        ...payload,
-        timestamp: new Date().toISOString()
-      };
-      io.to(payload.room).emit('chat:message', enriched);
+    async (payload: {
+      room: string;
+      message: string;
+      senderId: string;
+      senderName: string;
+      senderRole: 'ADMIN' | 'TEACHER' | 'STUDENT';
+      timestamp?: string;
+    }) => {
+      try {
+        const saved = await prisma.chatMessage.create({
+          data: {
+            room: payload.room,
+            message: payload.message,
+            senderId: payload.senderId,
+            senderName: payload.senderName,
+            senderRole: payload.senderRole,
+            timestamp: payload.timestamp ?? new Date().toISOString(),
+          } as any,
+        });
+
+        io.to(payload.room).emit('chat:message', {
+          id: saved.id,
+          room: saved.room,
+          senderId: saved.senderId,
+          senderName: saved.senderName,
+          senderRole: (saved as any).senderRole,
+          message: saved.message,
+          timestamp: saved.timestamp as any,
+        });
+      } catch (err) {
+        console.error('Error saving chat message:', err);
+      }
     }
   );
 
@@ -50,8 +78,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 1085;
-const prisma = new PrismaClient();
+const PORT = process.env.PORT || 1099;
 
 // Database connection check
 async function checkDatabaseConnection() {
@@ -73,6 +100,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/chat', chatRoutes);
 
 const coursesRouter = Router();
 createQuizAndCourseRouter(coursesRouter);

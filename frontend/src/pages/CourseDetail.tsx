@@ -34,8 +34,8 @@ const CourseDetail: React.FC = () => {
     const load = async () => {
       try {
         const [courseRes, quizRes] = await Promise.all([
-          fetch(`http://localhost:1085/api/courses/${id}`),
-          fetch(`http://localhost:1085/api/courses/${id}/quizzes`)
+          fetch(`http://localhost:1099/api/courses/${id}`),
+          fetch(`http://localhost:1099/api/courses/${id}/quizzes`)
         ]);
         const courseData = await courseRes.json();
         const quizData = await quizRes.json();

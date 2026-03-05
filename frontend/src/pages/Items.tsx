@@ -20,7 +20,7 @@ export default function Items() {
 
     const fetchItems = async (cursor?: string) => {
         try {
-            const url = new URL('http://localhost:1085/api/items');
+            const url = new URL('http://localhost:1099/api/items');
             url.searchParams.append('limit', '6');
             if (cursor) url.searchParams.append('cursor', cursor);
 
@@ -41,7 +41,7 @@ export default function Items() {
     const fetchFavorites = async () => {
         if (!token) return;
         try {
-            const res = await fetch('http://localhost:1085/api/items/favorites', {
+            const res = await fetch('http://localhost:1099/api/items/favorites', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -86,7 +86,7 @@ export default function Items() {
         });
 
         try {
-            const url = `http://localhost:1085/api/items/${itemId}/favorite`;
+            const url = `http://localhost:1099/api/items/${itemId}/favorite`;
             const res = await fetch(url, {
                 method: isFav ? 'DELETE' : 'POST',
                 headers: { Authorization: `Bearer ${token}` }

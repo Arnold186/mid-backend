@@ -20,7 +20,7 @@ const Courses: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('http://localhost:1085/api/courses?status=APPROVED');
+        const res = await fetch('http://localhost:1099/api/courses?status=APPROVED');
         const data = await res.json();
         setCourses(data);
       } catch (e) {
@@ -40,7 +40,7 @@ const Courses: React.FC = () => {
     try {
       setEnrolling(courseId);
       const res = await fetch(
-        `http://localhost:1085/api/courses/${courseId}/enroll`,
+        `http://localhost:1099/api/courses/${courseId}/enroll`,
         {
           method: 'POST',
           headers: {

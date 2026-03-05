@@ -18,7 +18,7 @@ const AdminCourses: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('http://localhost:1085/api/courses?status=PENDING');
+        const res = await fetch('http://localhost:1099/api/courses?status=PENDING');
         const data = await res.json();
         setCourses(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -38,7 +38,7 @@ const AdminCourses: React.FC = () => {
     try {
       setUpdatingId(courseId);
       const res = await fetch(
-        `http://localhost:1085/api/courses/${courseId}/approve`,
+        `http://localhost:1099/api/courses/${courseId}/approve`,
         {
           method: 'PUT',
           headers: {

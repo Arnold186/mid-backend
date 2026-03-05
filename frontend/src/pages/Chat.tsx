@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,6 +6,17 @@ interface ChatMessage {
   id: string;
   senderId: string;
   senderName: string;
+  senderRole: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  message: string;
+  timestamp: string;
+}
+
+interface ChatMessagePayload {
+  id: string;
+  room: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'ADMIN' | 'TEACHER' | 'STUDENT';
   message: string;
   timestamp: string;
 }
@@ -18,21 +29,53 @@ const getOrganizationRoom = (email: string) => {
 };
 
 const Chat: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   const room = useMemo(
     () => (user ? getOrganizationRoom(user.email) : 'org:default'),
     [user]
   );
 
+  // Fetch Chat history
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        if (!token) return;
+        const response = await fetch(`http://localhost:1099/api/chat/${room}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch messages');
+        }
+        const messages = await response.json();
+        const normalized = (Array.isArray(messages) ? messages : []).map((m: any) => ({
+          ...m,
+          senderRole: m.senderRole ?? 'STUDENT'
+        }));
+        setMessages(normalized);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    if (user && room) {
+      fetchMessages();
+    }
+  }, [room, token, user]);
+
+
+  // Socket setup
   useEffect(() => {
     if (!user) return;
 
     if (!socket) {
-      socket = io('http://localhost:1085', {
+      socket = io('http://localhost:1099', {
         transports: ['websocket']
       });
     }
@@ -48,17 +91,21 @@ const Chat: React.FC = () => {
       setIsConnected(false);
     });
 
-    currentSocket.on('chat:message', (payload: any) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${payload.timestamp}-${payload.senderId}-${Math.random().toString(36).slice(2)}`,
-          senderId: payload.senderId,
-          senderName: payload.senderName,
-          message: payload.message,
-          timestamp: payload.timestamp
-        }
-      ]);
+    currentSocket.on('chat:message', (payload: ChatMessagePayload) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === payload.id)) return prev;
+        return [
+          ...prev,
+          {
+            id: payload.id,
+            senderId: payload.senderId,
+            senderName: payload.senderName,
+            senderRole: payload.senderRole,
+            message: payload.message,
+            timestamp: payload.timestamp
+          }
+        ];
+      });
     });
 
     return () => {
@@ -68,6 +115,10 @@ const Chat: React.FC = () => {
     };
   }, [room, user]);
 
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!socket || !user || !input.trim()) return;
@@ -75,8 +126,9 @@ const Chat: React.FC = () => {
     socket.emit('chat:message', {
       room,
       message: input.trim(),
+      senderId: user.id,
       senderName: user.name,
-      senderId: user.id
+      senderRole: user.role
     });
 
     setInput('');
@@ -115,6 +167,9 @@ const Chat: React.FC = () => {
               <div className="chat-message-meta">
                 <span className="chat-message-sender">
                   {msg.senderId === user.id ? 'You' : msg.senderName}
+                  <span className={`chat-role chat-role-${msg.senderRole.toLowerCase()}`}>
+                    {msg.senderRole}
+                  </span>
                 </span>
                 <span className="chat-message-time">
                   {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -127,15 +182,16 @@ const Chat: React.FC = () => {
             </div>
           ))
         )}
+        <div ref={endRef} />
       </div>
 
       <form className="chat-input-row" onSubmit={handleSend}>
-        <input
-          type="text"
+        <textarea
           className="chat-input"
           placeholder="Type a message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          rows={2}
         />
         <button
           type="submit"

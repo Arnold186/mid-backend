@@ -30,7 +30,7 @@ const TeacherCourses: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('http://localhost:1085/api/courses');
+        const res = await fetch('http://localhost:1099/api/courses');
         const data = await res.json();
         const mine = Array.isArray(data)
           ? data.filter((c: any) => c.teacher?.id === user?.id)
@@ -55,7 +55,7 @@ const TeacherCourses: React.FC = () => {
     }
     try {
       setCreating(true);
-      const res = await fetch('http://localhost:1085/api/courses', {
+      const res = await fetch('http://localhost:1099/api/courses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ const TeacherCourses: React.FC = () => {
         answer: q.answer
       }));
       const res = await fetch(
-        `http://localhost:1085/api/courses/${quizCourseId}/quizzes`,
+        `http://localhost:1099/api/courses/${quizCourseId}/quizzes`,
         {
           method: 'POST',
           headers: {

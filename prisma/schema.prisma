@@ -7,37 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
-}
-
 model User {
-  id           String    @id @default(cuid())
+  id           String        @id @default(cuid())
   name         String
-  email        String    @unique
+  email        String        @unique
   password     String
-  role         Role      @default(STUDENT)
+  role         Role          @default(STUDENT)
   phoneNumber  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  favorites    Favorite[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   auditLogs    AuditLog[]
   courses      Course[]      @relation("TeacherCourses")
   enrollments  Enrollment[]
+  favorites    Favorite[]
   quizAttempts QuizAttempt[]
 }
 
 model Item {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   title       String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  favorites Favorite[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  favorites   Favorite[]
 }
 
 model Favorite {
@@ -45,9 +37,8 @@ model Favorite {
   userId    String
   itemId    String
   createdAt DateTime @default(now())
-
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, itemId])
   @@index([userId])
@@ -57,39 +48,36 @@ model AuditLog {
   id        String   @id @default(cuid())
   userId    String
   action    String
-  metadata  String?  // JSON string for additional data
+  metadata  String?
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
 }
 
 model Course {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   title       String
   description String?
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  status      String       @default("PENDING")
   teacherId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
-  quizzes     Quiz[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  teacher     User         @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
+  quizzes     Quiz[]
 }
 
 model Quiz {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   courseId  String
   title     String
-  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  status    String        @default("PENDING")
   questions Question[]
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   attempts  QuizAttempt[]
 }
 
@@ -97,11 +85,10 @@ model Question {
   id        String   @id @default(cuid())
   quizId    String
   text      String
-  options   String   // JSON string of options
+  options   String
   answer    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
@@ -111,11 +98,10 @@ model QuizAttempt {
   studentId String
   score     Int
   total     Int
-  answers   String   // JSON string: { [questionId]: selectedOption }
+  answers   String
   createdAt DateTime @default(now())
-
-  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
   @@index([studentId])
@@ -127,9 +113,27 @@ model Enrollment {
   studentId String
   courseId  String
   createdAt DateTime @default(now())
-
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, courseId])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  room       String
+  senderId   String
+  senderName String
+  message    String
+  timestamp  String
+  createdAt  DateTime @default(now())
+
+  @@index([room])
+  @@index([timestamp])
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
 }
